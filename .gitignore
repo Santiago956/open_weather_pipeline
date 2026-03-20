@@ -205,3 +205,46 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# Terraform
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.backup
+*.tfstate.d/
+crash.log
+crash.*.log
+*.tfvars
+*.tfvars.json
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Google Cloud
+credentials.json
+*-credentials.json
+*_credentials.json
+service_account*.json
+application_default_credentials.json
+.gcloud/
+
+# dbt
+target/
+dbt_packages/
+dbt_modules/
+profiles.yml
+.user.yml
+logs/
+
+# Airflow
+airflow.cfg
+airflow.db
+airflow-webserver.pid
+standalone_admin_password.txt
+unittests.cfg
+webserver_config.py
+
+# Docker
+docker-compose.override.yml
+.docker/

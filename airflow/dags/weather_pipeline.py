@@ -1,6 +1,6 @@
 from airflow.sdk import dag, task
 from airflow.models import Variable
-from airflow.providers.google.cloud.operators.bigquery import BigQueryCreateExternalTableOperator
+from airflow.providers.google.cloud.operators.bigquery import BigQueryUpsertTableOperator
 from include.scripts.extract_weather import fetch_weather_data, upload_to_gcs
 import pendulum
 from datetime import timedelta
@@ -29,12 +29,9 @@ default_args = {
 
 def weather_pipeline():
 
-    gcp_project = os.getenv("GCP_PROJECT") or Variable.get("GCP_PROJECT", default_var=None)
-    bq_dataset = os.getenv("BQ_DATASET") or Variable.get("BQ_DATASET", default_var=None)
-    bucket_name = os.getenv("GCP_MAIN_BUCKET") or Variable.get("GCP_MAIN_BUCKET", default_var=None)
 
     @task()
-    def extract():
+    def extract_from_api():
         api_key = os.getenv("OPEN_WEATHER_API_KEY") or Variable.get("OPEN_WEATHER_API_KEY", default_var=None)
         
         if not api_key:
@@ -44,32 +41,32 @@ def weather_pipeline():
         return fetch_weather_data(api_key)
     
     @task()
-    def load(data):
+    def transform_load_gcs(data):
         bucket = os.getenv("GCP_MAIN_BUCKET") or Variable.get("GCP_MAIN_BUCKET", default_var=None)
         if not bucket:
             raise ValueError("GCP_MAIN_BUCKET is missing!")
                 
         return upload_to_gcs(data, bucket)
     
-
     
-    create_external_table = BigQueryCreateExternalTableOperator(
-        task_id='create_external_table',
-        destination_project_dataset_table=(
-            "{{ var.value.GCP_PROJECT }}."
-            "{{ var.value.BQ_DATASET }}."
-            "raw_weather_data"
-        ),
-        bucket="{{ var.value.GCP_MAIN_BUCKET }}",
-        source_objects=["raw/*/*/*/*.json"],
-        source_format='NEWLINE_DELIMITED_JSON',
+    load_big_query = BigQueryUpsertTableOperator(
+        task_id='load_to_external_table',
+        dataset_id=os.getenv("BQ_DATASET", "weather_bronze"),
+        project_id=os.getenv("GCP_PROJECT", "open-weather-pipeline"),
+        table_resource={
+            "tableReference": {"tableId": "raw_weather_data"},
+            "externalDataConfiguration": {
+                "sourceUris": [f"gs://{os.getenv('GCP_MAIN_BUCKET')}/raw/*.json"], 
+                "sourceFormat": "NEWLINE_DELIMITED_JSON",
+                "autodetect": True,
+                },
+        },
         gcp_conn_id="google_cloud_default",
-        autodetect=True,
     )
 
-    data = extract()
-    upload_done = load(data)
+    data = extract_from_api()
+    upload_done = transform_load_gcs(data)
     
-    upload_done >> create_external_table
+    upload_done >> load_big_query
 
 weather_pipeline()

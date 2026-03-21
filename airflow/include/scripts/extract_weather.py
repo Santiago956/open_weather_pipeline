@@ -50,6 +50,13 @@ def fetch_weather_data(api_key):
             response.raise_for_status()
             
             data = response.json()
+
+            if 'rain'in data and '1h' in data['rain']:
+                data['rain']['last_1h'] = data['rain'].pop('1h')
+
+            if 'snow'in data and '1h' in data['snow']:
+                data['snow']['last_1h'] = data['snow'].pop('1h')
+
             data['extracted_at'] = timestamp
             data['state_abbreviation'] = capital['estado']
             all_data.append(data)

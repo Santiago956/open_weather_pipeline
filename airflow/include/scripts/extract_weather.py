@@ -69,7 +69,7 @@ def upload_to_gcs(data, bucket_name, gcp_conn_id="google_cloud_default"):
         return
     
     try:
-        hook = GCSHook(gcp_conn_id)
+        hook = GCSHook(gcp_conn_id=gcp_conn_id)
         now = datetime.now()
         timestamp_file = now.strftime('%H%M')
         date_path = now.strftime('%Y/%m/%d')

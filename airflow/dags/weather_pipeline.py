@@ -1,13 +1,13 @@
 from airflow.sdk import dag, task
-from datetime import datetime, timedelta
+from datetime import timedelta
+import pendulum
 from airflow.models import Variable
 from include.scripts.extract_weather import fetch_weather_data, upload_to_gcs
 import logging
 import os 
-from dotenv import load_dotenv
 
 logger = logging.getLogger(__name__)
-load_dotenv()
+
 
 default_args = {
     'owner': 'Santiago',
@@ -21,7 +21,7 @@ default_args = {
     default_args=default_args,
     description='A DAG to fetch weather data for Brazilian capitals and upload to GCS',
     schedule='@hourly',
-    start_date=datetime(2026, 3, 20),
+    start_date=pendulum.datetime(2026, 3, 20, tz="UTC"),
     catchup=False,
     tags=['weather', 'gcs', 'bronze'],
 )
@@ -30,7 +30,7 @@ def weather_pipeline():
 
     @task()
     def extract():
-        api_key = os.getenv("OPEN_WEATHER_API_KEY") or Variable.get("OPENWEATHER_API_KEY", default_var=None)
+        api_key = os.getenv("OPEN_WEATHER_API_KEY") or Variable.get("OPEN_WEATHER_API_KEY", default_var=None)
         
         if not api_key:
             logger.error("API Key não encontrada no .env nem no Airflow Variables.")

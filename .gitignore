@@ -228,6 +228,7 @@ credentials.json
 service_account*.json
 application_default_credentials.json
 .gcloud/
+*.json
 
 # dbt
 target/

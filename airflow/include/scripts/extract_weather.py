@@ -63,7 +63,6 @@ def fetch_weather_data(api_key):
     return all_data
 
 def upload_to_gcs(data, bucket_name, gcp_conn_id="google_cloud_default"):
-
     if not data:
         logger.warning("No data to upload to GCS.")
         return
@@ -71,23 +70,19 @@ def upload_to_gcs(data, bucket_name, gcp_conn_id="google_cloud_default"):
     try:
         hook = GCSHook(gcp_conn_id=gcp_conn_id)
         now = datetime.now()
-        timestamp_file = now.strftime('%H%M')
-        date_path = now.strftime('%Y/%m/%d')
-
-        object_name = f"raw/{date_path}/weather_data_{timestamp_file}.json"
-        json_data = json.dumps(data)
-
-        logger.info(f"Uploading data to GCS bucket '{bucket_name}' with object name '{object_name}'")
+        object_name = f"raw/{now.strftime('%Y/%m/%d')}/weather_data_{now.strftime('%H%M')}.json"
+        
+        
+        jsonl_data = "\n".join([json.dumps(record) for record in data])
 
         hook.upload(
             bucket_name=bucket_name,
             object_name=object_name,
-            data=json_data,
+            data=jsonl_data,
             mime_type='application/json'
         )
-
-        logger.info("Data successfully uploaded to GCS.")
-
+        logger.info(f"Data successfully uploaded to GCS: {object_name}")
+        return bucket_name
     except Exception as e:
         logger.error(f"Error uploading data to GCS: {e}")
         raise

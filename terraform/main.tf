@@ -1,10 +1,14 @@
 resource "google_storage_bucket" "weather_data_bucket" {
-  name     = "${var.project}-weather-data"
+  name     = "${var.project}-${var.bucket_name}"
   location = var.location
 
   storage_class = "STANDARD"
   public_access_prevention = "enforced"
   uniform_bucket_level_access = true 
+
+
+
+  force_destroy = true
 
   lifecycle_rule {
     condition {
@@ -27,6 +31,8 @@ resource "google_bigquery_dataset" "weather_data_dataset" {
   description = "Dataset for storing weather data with silver and gold layers"
 
   delete_contents_on_destroy = true # delete dataset contents when the dataset is destroyed
+  default_table_expiration_ms = 2592000000 #30 days in milliseconds, necessary for free tier accounts
+  default_partition_expiration_ms = 2592000000 #30 days in milliseconds, necessary for free tier accounts
 
   labels = {
     env = "dev"

@@ -14,7 +14,7 @@ variable "region" {
 variable "credentials" {
   description = "Json path to your service account credentials"
   type = string
-  default = "gcp_credentials.jsons" #suppose you left your json file in the terraform folder
+  default = "gcp_credentials.json" #suppose you left your json file in the terraform folder
 }
 
 variable "location" {
@@ -23,10 +23,10 @@ variable "location" {
 
 variable bucket_name {
   type = string
-  default = "${var.project}-bronze-data"
+  default = "weather-bronze-data"
 }
 
 variable service_account_email {
+  description = "Service account email"
   type = string
-  default = "${var.service_account_email}"
 }

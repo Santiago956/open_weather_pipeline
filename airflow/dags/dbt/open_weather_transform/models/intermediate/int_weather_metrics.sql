@@ -17,7 +17,6 @@ flattened AS (
         city_name,
         state,
         extracted_at_utc,
-        -- Conversão para fuso horário de Brasília (essencial para o BI)
         datetime(extracted_at_utc, "America/Sao_Paulo") AS extracted_at_br,
         
         CAST(main.temp AS FLOAT64) AS temp_celsius,

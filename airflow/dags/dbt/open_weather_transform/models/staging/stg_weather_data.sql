@@ -1,5 +1,3 @@
--- models/staging/stg_weather_data.sql
-
 {% set column_names = adapter.get_columns_in_relation(source('open_weather_raw', 'raw_weather_data')) | map(attribute='name') | list %}
 
 WITH source AS (

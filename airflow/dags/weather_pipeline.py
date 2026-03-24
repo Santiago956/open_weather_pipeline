@@ -23,7 +23,6 @@ profile_config = ProfileConfig(
         profile_args={
             "project": os.getenv("GCP_PROJECT"),
             "dataset": os.getenv("BQ_DATASET"),
-            # Forçamos o dbt a ler este arquivo específico
             "keyfile": "/usr/local/airflow/include/gcp_credentials.json",
         },
     ),
@@ -82,53 +81,25 @@ def weather_pipeline():
     
     load_big_query = BigQueryUpsertTableOperator(
         task_id='load_to_external_table',
-        dataset_id=os.getenv("BQ_DATASET", "weather_data"),
-        project_id=os.getenv("GCP_PROJECT", "open-weather-pipeline"),
+        dataset_id=os.getenv("BQ_DATASET"),
+        project_id=os.getenv("GCP_PROJECT"),
         table_resource={
             "tableReference": {"tableId": "raw_weather_data"},
             "externalDataConfiguration": {
                 "sourceUris": [f"gs://{os.getenv('GCP_MAIN_BUCKET')}/raw/*.json"],
                 "sourceFormat": "NEWLINE_DELIMITED_JSON",
-                "autodetect": False, 
+                "autodetect": True, 
                 "ignoreUnknownValues": True,
-                "schema": {
-                    "fields": [
-                        {"name": "id", "type": "INTEGER"},
-                        {"name": "name", "type": "STRING"},
-                        {"name": "state_abbreviation", "type": "STRING"},
-                        {"name": "extracted_at", "type": "TIMESTAMP"},
-                        {"name": "dt", "type": "INTEGER"},
-                        {"name": "main", "type": "RECORD", "fields": [
-                            {"name": "temp", "type": "FLOAT"},
-                            {"name": "feels_like", "type": "FLOAT"},
-                            {"name": "temp_min", "type": "FLOAT"},
-                            {"name": "temp_max", "type": "FLOAT"},
-                            {"name": "pressure", "type": "INTEGER"},
-                            {"name": "humidity", "type": "INTEGER"}
-                        ]},
-                        {"name": "wind", "type": "RECORD", "fields": [
-                            {"name": "speed", "type": "FLOAT"},
-                            {"name": "deg", "type": "INTEGER"}
-                        ]},
-                        {"name": "clouds", "type": "RECORD", "fields": [
-                            {"name": "all", "type": "INTEGER"}
-                        ]},
-                        {"name": "weather", "type": "RECORD", "mode": "REPEATED", "fields": [
-                            {"name": "main", "type": "STRING"},
-                            {"name": "description", "type": "STRING"}
-                        ]},
-                        {"name": "rain", "type": "RECORD", "fields": [{"name": "last_1h", "type": "FLOAT"}]},
-                        {"name": "snow", "type": "RECORD", "fields": [{"name": "last_1h", "type": "FLOAT"}]}
-                    ]
-                }
+                "compression": "NONE",
             },
         },
+
         gcp_conn_id="google_cloud_default",
-)
+    )
 
     transform_data = DbtTaskGroup(
         group_id="dbt_transformation",
-        project_config=project_config, # Use a variável definida acima
+        project_config=project_config,
         profile_config=profile_config,
         execution_config=execution_config,
         render_config=render_config,

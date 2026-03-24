@@ -1,0 +1,19 @@
+version: 2
+
+models:
+  - name: stg_weather_data
+    description: "Staging model for weather data, with basic transformations and type casting."
+    columns:
+      - name: city_id
+        description: "Primary key"
+        tests:
+          - not_null
+
+      
+      - name: temp_celsius
+        description: "Temperature converted to Celsius"
+        tests:
+          - not_null
+          
+      - name: rain
+        description: "Rain column (can be null, but must exist)"

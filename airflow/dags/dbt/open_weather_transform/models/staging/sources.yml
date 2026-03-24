@@ -1,0 +1,20 @@
+version: 2
+
+sources:
+  - name: open_weather_raw
+    database: "{{ env_var('GCP_PROJECT') }}"
+    schema: "{{ env_var('BQ_DATASET') }}"
+    tables:
+      - name: raw_weather_data
+        description: "Raw data from OpenWeather API from 27 brazilian capitals."
+        config:
+          loaded_at_field: extracted_at
+        columns:
+          - name: id
+            description: "City ID"
+            tests:
+              - not_null  
+          - name: extracted_at
+            description: "Extraction timestamp"
+            tests:
+              - not_null

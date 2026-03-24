@@ -2,10 +2,41 @@ from airflow.sdk import dag, task
 from airflow.models import Variable
 from airflow.providers.google.cloud.operators.bigquery import BigQueryUpsertTableOperator
 from include.scripts.extract_weather import fetch_weather_data, upload_to_gcs
+from cosmos import DbtTaskGroup, ProjectConfig, ProfileConfig, RenderConfig, ExecutionConfig # Adicione ExecutionConfig
+from cosmos.constants import InvocationMode 
+from cosmos.profiles import GoogleCloudServiceAccountFileProfileMapping # Importação correta
 import pendulum
 from datetime import timedelta
 import logging
 import os
+
+project_config = ProjectConfig(
+    dbt_project_path="/usr/local/airflow/dags/dbt/open_weather_transform",
+)
+
+
+profile_config = ProfileConfig(
+    profile_name="google_cloud_bigquery",
+    target_name="dev",
+    profile_mapping=GoogleCloudServiceAccountFileProfileMapping(
+        conn_id="google_cloud_default",
+        profile_args={
+            "project": os.getenv("GCP_PROJECT"),
+            "dataset": os.getenv("BQ_DATASET"),
+            # Forçamos o dbt a ler este arquivo específico
+            "keyfile": "/usr/local/airflow/include/gcp_credentials.json",
+        },
+    ),
+)
+execution_config = ExecutionConfig(
+    dbt_executable_path="/usr/local/pyenv/dbt-venv/bin/dbt",
+    invocation_mode=InvocationMode.SUBPROCESS,
+)
+
+render_config = RenderConfig(
+    emit_datasets=True,
+    test_behavior="after_each"
+)
 
 logger = logging.getLogger(__name__)
 
@@ -56,17 +87,56 @@ def weather_pipeline():
         table_resource={
             "tableReference": {"tableId": "raw_weather_data"},
             "externalDataConfiguration": {
-                "sourceUris": [f"gs://{os.getenv('GCP_MAIN_BUCKET')}/raw/*.json"], 
+                "sourceUris": [f"gs://{os.getenv('GCP_MAIN_BUCKET')}/raw/*.json"],
                 "sourceFormat": "NEWLINE_DELIMITED_JSON",
-                "autodetect": True,
-                },
+                "autodetect": False, 
+                "ignoreUnknownValues": True,
+                "schema": {
+                    "fields": [
+                        {"name": "id", "type": "INTEGER"},
+                        {"name": "name", "type": "STRING"},
+                        {"name": "state_abbreviation", "type": "STRING"},
+                        {"name": "extracted_at", "type": "TIMESTAMP"},
+                        {"name": "dt", "type": "INTEGER"},
+                        {"name": "main", "type": "RECORD", "fields": [
+                            {"name": "temp", "type": "FLOAT"},
+                            {"name": "feels_like", "type": "FLOAT"},
+                            {"name": "temp_min", "type": "FLOAT"},
+                            {"name": "temp_max", "type": "FLOAT"},
+                            {"name": "pressure", "type": "INTEGER"},
+                            {"name": "humidity", "type": "INTEGER"}
+                        ]},
+                        {"name": "wind", "type": "RECORD", "fields": [
+                            {"name": "speed", "type": "FLOAT"},
+                            {"name": "deg", "type": "INTEGER"}
+                        ]},
+                        {"name": "clouds", "type": "RECORD", "fields": [
+                            {"name": "all", "type": "INTEGER"}
+                        ]},
+                        {"name": "weather", "type": "RECORD", "mode": "REPEATED", "fields": [
+                            {"name": "main", "type": "STRING"},
+                            {"name": "description", "type": "STRING"}
+                        ]},
+                        # Mudamos para JSON para aceitar o campo "1h" internamente
+                        {"name": "rain", "type": "JSON", "mode": "NULLABLE"},
+                        {"name": "snow", "type": "JSON", "mode": "NULLABLE"}
+                    ]
+                }
+            },
         },
         gcp_conn_id="google_cloud_default",
     )
 
+    transform_data = DbtTaskGroup(
+        group_id="dbt_transformation",
+        project_config=project_config, # Use a variável definida acima
+        profile_config=profile_config,
+        execution_config=execution_config,
+        render_config=render_config,
+    )
     data = extract_from_api()
     upload_done = transform_load_gcs(data)
     
-    upload_done >> load_big_query
+    upload_done >> load_big_query >> transform_data
 
 weather_pipeline()

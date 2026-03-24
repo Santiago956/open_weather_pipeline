@@ -1,0 +1,27 @@
+name: 'open_weather_transform'
+version: '1.0'
+config-version: 2
+
+profile: 'google_cloud_bigquery'
+
+model-paths: ["models"]
+
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+models:
+  open_weather_transform:
+
+    staging:
+      +materialized: view
+      +schema: staging
+
+    intermediate:
+      +materialized: table
+      +schema: intermediate
+
+    marts:
+      +materialized: table
+      +schema: marts
+    

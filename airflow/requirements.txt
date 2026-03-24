@@ -4,3 +4,5 @@ pyarrow
 python-dotenv
 apache-airflow-providers-google
 pandas
+astronomer-cosmos
+dbt-bigquery

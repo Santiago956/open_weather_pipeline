@@ -9,11 +9,7 @@ models:
         tests:
           - not_null
 
-      
-      - name: temp_celsius
-        description: "Temperature converted to Celsius"
-        tests:
-          - not_null
-          
       - name: rain
         description: "Rain column (can be null, but must exist)"
+      - name: snow
+        description: "Snow column (can be null, but must exist)"

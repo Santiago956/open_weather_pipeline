@@ -1,0 +1,45 @@
+version: 2
+
+models:
+  - name: int_weather_metrics
+    description: "Intermediate table containing flattened weather data converted to Brasília timezone (BRT)."
+    columns:
+      - name: city_id
+        description: "Unique city identifier from the OpenWeather API."
+        tests:
+          - not_null
+
+      - name: extracted_at_utc
+        description: "Extraction timestamp in UTC (partitioning field)."
+        tests:
+          - not_null
+
+      - name: temp_celsius
+        description: "Temperature in degrees Celsius."
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: -100
+              max_value: 60
+              description: "Ensures temperature stays within realistic terrestrial limits."
+
+      - name: humidity_percent
+        description: "Relative air humidity percentage."
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              max_value: 100
+
+      - name: rain_1h_mm
+        description: "Rainfall volume in the last hour (normalized to 0.0 if null)."
+        tests:
+          - not_null
+
+      - name: weather_main
+        description: "Main weather category (e.g., Rain, Clouds, Clear)."
+        tests:
+          - not_null
+
+    tests:
+      - unique:
+          column_name: "(city_id || '-' || extracted_at_utc)"

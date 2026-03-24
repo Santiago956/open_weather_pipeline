@@ -2,9 +2,9 @@ from airflow.sdk import dag, task
 from airflow.models import Variable
 from airflow.providers.google.cloud.operators.bigquery import BigQueryUpsertTableOperator
 from include.scripts.extract_weather import fetch_weather_data, upload_to_gcs
-from cosmos import DbtTaskGroup, ProjectConfig, ProfileConfig, RenderConfig, ExecutionConfig # Adicione ExecutionConfig
+from cosmos import DbtTaskGroup, ProjectConfig, ProfileConfig, RenderConfig, ExecutionConfig
 from cosmos.constants import InvocationMode 
-from cosmos.profiles import GoogleCloudServiceAccountFileProfileMapping # Importação correta
+from cosmos.profiles import GoogleCloudServiceAccountFileProfileMapping
 import pendulum
 from datetime import timedelta
 import logging

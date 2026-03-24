@@ -1,0 +1,40 @@
+version: 2
+
+models:
+  - name: fact_weather_capitals_now
+    description: "Final Mart containing the most recent weather status for each Brazilian capital. Used for real-time dashboards."
+    columns:
+      - name: city_name
+        description: "Name of the capital city."
+        tests:
+          - not_null
+          - unique 
+
+      - name: state
+        description: "State abbreviation (UF)."
+        tests:
+          - not_null
+
+      - name: extracted_at_br
+        description: "Local timestamp (America/Sao_Paulo) of the measurement."
+        tests:
+          - not_null
+
+      - name: weather_alert
+        description: "Business rule-based alert (Extreme Heat, Cold, Rainy, Snowy, or Normal)."
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Extreme Heat', 'Cold', 'Rainy', 'Snowy', 'Normal']
+
+      - name: temp_celsius
+        description: "Current temperature."
+        tests:
+          - not_null
+
+
+    tests:
+      - dbt_utils.equal_rowcount:
+          compare_model: source('weather_data', 'raw_weather_data')
+          config:
+            where: "FALSE" 

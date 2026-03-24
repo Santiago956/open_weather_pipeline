@@ -1,4 +1,11 @@
--- models/intermediate/int_weather_metrics.sql
+{{ config(
+    materialized='table',
+    partition_by={
+      "field": "extracted_at_utc",
+      "data_type": "timestamp",
+      "granularity": "day"
+    }
+) }}
 
 WITH staging AS (
     SELECT * FROM {{ ref('stg_weather_data') }}
@@ -24,8 +31,8 @@ flattened AS (
         CAST(wind.deg AS INT64) AS wind_direction_deg,
         CAST(clouds.all AS INT64) AS cloudiness_percent,
 
-        COALESCE(CAST(JSON_VALUE(rain, '$."1h"') AS FLOAT64), 0.0) AS rain_1h_mm,
-        COALESCE(CAST(JSON_VALUE(snow, '$."1h"') AS FLOAT64), 0.0) AS snow_1h_mm,
+        CAST(rain.last_1h AS FLOAT64) AS rain_1h_mm,
+        CAST(snow.last_1h AS FLOAT64) AS snow_1h_mm,
 
         weather[SAFE_OFFSET(0)].main AS weather_main,
         weather[SAFE_OFFSET(0)].description AS weather_description

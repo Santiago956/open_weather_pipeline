@@ -18,8 +18,8 @@ renamed AS (
         clouds,
         dt AS api_timestamp_dt,
 
-        SAFE_CAST(rain AS JSON) AS rain,
-        SAFE_CAST(snow AS JSON) AS snow
+        rain,
+        snow
 
     FROM source
 )

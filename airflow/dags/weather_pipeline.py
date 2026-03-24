@@ -82,7 +82,7 @@ def weather_pipeline():
     
     load_big_query = BigQueryUpsertTableOperator(
         task_id='load_to_external_table',
-        dataset_id=os.getenv("BQ_DATASET", "weather_bronze"),
+        dataset_id=os.getenv("BQ_DATASET", "weather_data"),
         project_id=os.getenv("GCP_PROJECT", "open-weather-pipeline"),
         table_resource={
             "tableReference": {"tableId": "raw_weather_data"},
@@ -117,15 +117,14 @@ def weather_pipeline():
                             {"name": "main", "type": "STRING"},
                             {"name": "description", "type": "STRING"}
                         ]},
-                        # Mudamos para JSON para aceitar o campo "1h" internamente
-                        {"name": "rain", "type": "JSON", "mode": "NULLABLE"},
-                        {"name": "snow", "type": "JSON", "mode": "NULLABLE"}
+                        {"name": "rain", "type": "RECORD", "fields": [{"name": "last_1h", "type": "FLOAT"}]},
+                        {"name": "snow", "type": "RECORD", "fields": [{"name": "last_1h", "type": "FLOAT"}]}
                     ]
                 }
             },
         },
         gcp_conn_id="google_cloud_default",
-    )
+)
 
     transform_data = DbtTaskGroup(
         group_id="dbt_transformation",
